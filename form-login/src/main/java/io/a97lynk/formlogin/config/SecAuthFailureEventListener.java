@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Component
+//@Component
 public class SecAuthFailureEventListener implements ApplicationListener<AuthenticationFailureBadCredentialsEvent> {
 
 	private final LoginAttemptService loginAttemptService;

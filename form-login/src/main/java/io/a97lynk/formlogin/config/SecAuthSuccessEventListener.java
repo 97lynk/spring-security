@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Component
+//@Component
 public class SecAuthSuccessEventListener implements ApplicationListener<AuthenticationSuccessEvent> {
 
 
@@ -29,5 +29,7 @@ public class SecAuthSuccessEventListener implements ApplicationListener<Authenti
 		else
 			loginAttemptService.attemptSuccess(xHeader);
 	}
+
+
 
 }

@@ -9,9 +9,10 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.security.web.session.SimpleRedirectSessionInformationExpiredStrategy;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 public class SecSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
@@ -49,10 +50,17 @@ public class SecSecurityConfig extends WebSecurityConfigurerAdapter {
 		// UsernamePasswordAuthenticationFilter.class
 		// DaoAuthenticationProvider.class
 		http
-				.headers().frameOptions().disable()
+				.cors() // Cross-Origin Resource Sharing
 				.and()
-				.csrf().disable()
+				.csrf() // Cross-site Request Forgery
+				.and()
+				.headers()
+				.xssProtection()
+				.and()
+				.frameOptions().disable()
+				.and()
 				.authorizeRequests()
+				.antMatchers("/user/**").hasAnyRole(    "USER", "ADMIN")
 				.antMatchers("/admin/**").hasRole("ADMIN")
 				.antMatchers("/anonymous*").anonymous()
 				.antMatchers("/login*", "/h2-console/**").permitAll()
@@ -65,7 +73,7 @@ public class SecSecurityConfig extends WebSecurityConfigurerAdapter {
 				.loginProcessingUrl("/perform_login")
 
 				// when success
-//				.defaultSuccessUrl("/", true) // ->  new SavedRequestAwareAuthenticationSuccessHandler()
+				.defaultSuccessUrl("/", true) // ->  new SavedRequestAwareAuthenticationSuccessHandler()
 //				.successForwardUrl() -> successHandler(new ForwardAuthenticationSuccessHandler(forwardUrl))
 //				.successHandler(new RefererAuthenticationSuccessHandler()) // -> after login success will redirect to url that defined in Referer header
 //				.successHandler(new SavedRequestAwareAuthenticationSuccessHandler()) // -> successful login, users will be redirected to the URL saved in the original request
@@ -106,6 +114,16 @@ public class SecSecurityConfig extends WebSecurityConfigurerAdapter {
 				.tokenValiditySeconds(2000)
 		;
 
+		http.sessionManagement()
+				.maximumSessions(1)
+				.maxSessionsPreventsLogin(true)
+				.expiredSessionStrategy(new SimpleRedirectSessionInformationExpiredStrategy("/loginPage"))
+//				.invalidSessionUrl()
+//				.expiredUrl()
+		;
+
+
+//		.expiredSessionStrategy(new ResponseBodySessionInformationExpiredStrategy())
 //		SecurityContextPersistenceFilter
 //  ----> UsernamePasswordAuthenticationFilter#doFilter#attemptAuthentication -> ProviderManager [RememberMeAuthenticationProvider, DaoAuthenticationProvider]
 //  ----> RememberMeAuthenticationFilter

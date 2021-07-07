@@ -1,6 +1,6 @@
 
 logging:
-  level.root: debug
+  level.org.springframework.security.web.FilterChainProxy: debug
 
 spring:
   thymeleaf:
@@ -13,3 +13,9 @@ spring:
   h2:
     console:
       enabled: true
+server:
+  servlet:
+    session:
+      cookie:
+        http-only: true
+#      timeout: 1m

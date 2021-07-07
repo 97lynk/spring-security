@@ -9,6 +9,16 @@
         <a href="/user/hello">User Page</a> |
         <a href="/perform_logout">Logout</a>
     </nav>
+
+    <p th:utext="${data}">
+    </p>
+
+    <form action="/user/xssDemo" method="post">
+        <textarea name="note" id="note" cols="30" rows="10"></textarea>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit">Send</button>
+    </form>
+    <small>*hint: input '&lt;script&gt;alert(&#39;hacked&#39;)&lt;/script&gt;' to above box</small>
 </div>
 
 </body>
