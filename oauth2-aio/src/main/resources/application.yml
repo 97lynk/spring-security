@@ -7,15 +7,17 @@ spring:
   h2:
     console:
       enabled: true
-  security:
-    user:
-      name: user1
-      password: 123
-#security:
-#  oauth2:
-#    client:
-#      client-id: clientId
-#      client-secret: clientSecret
+security:
+  oauth2:
+    authorization:
+      jwt:
+        key-store: classpath:/key-for-jwt.jks
+        key-password: P@ss
+        key-alias: aliasname
+        key-store-password: pAss
+    client:
+      client-id: clientId
+      client-secret: clientSecret
 #      auto-approve-scopes: read
 #      registered-redirect-uri: http://localhost:3000/token
 #      authorized-grant-types: authorization_code

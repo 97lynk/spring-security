@@ -12,11 +12,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @Controller
-public class TestController {
+public class LoginController {
 
 	HttpSessionRequestCache cache = new HttpSessionRequestCache();
 
-	@GetMapping("/data")
+	@GetMapping("/me")
 	@ResponseBody
 	public Authentication getAuth(Authentication authentication) {
 		return authentication;
@@ -27,7 +27,7 @@ public class TestController {
 	public String loginPage(HttpServletRequest request, HttpServletResponse response, Model model) {
 		SavedRequest savedRequest = cache.getRequest(request, response);
 		if (savedRequest != null)
-			model.addAttribute("clientId", savedRequest.getParameterMap().getOrDefault("client_id", null)[0]);
+			model.addAttribute("clientId", savedRequest.getParameterMap().getOrDefault("client_id", new String[]{""})[0]);
 		return "login";
 	}
 }

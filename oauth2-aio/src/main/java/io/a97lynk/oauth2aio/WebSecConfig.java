@@ -1,6 +1,9 @@
 package io.a97lynk.oauth2aio;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,6 +22,14 @@ import java.util.Map;
 public class WebSecConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
+	protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+		auth.inMemoryAuthentication()
+				.withUser("user1")
+				.password("{noop}123")
+				.roles("USER");
+	}
+
+	@Override
 	protected void configure(HttpSecurity http) throws Exception {
 		http
 				.cors() // Cross-Origin Resource Sharing
@@ -30,12 +41,6 @@ public class WebSecConfig extends WebSecurityConfigurerAdapter {
 				.loginProcessingUrl("/perform_login")
 				.failureUrl("/loginPage?error")
 				.and()
-//				.logout(Customizer.withDefaults())
-//				.logoutUrl("/logout")
-//				.addLogoutHandler(new DefaultLogoutPageGeneratingFilter())
-//				.logoutSuccessUrl("/logout")
-//				.successHandler(new SavedRequestAwareAuthenticationSuccessHandler())
-//				.and()
 				.authorizeRequests()
 				.antMatchers("/login**").permitAll()
 				.anyRequest().authenticated()
@@ -56,11 +61,12 @@ public class WebSecConfig extends WebSecurityConfigurerAdapter {
 				: Collections.emptyMap();
 	}
 
-//	@Bean(AUTHENTICATION_MANAGER)
-//	@Override
-//	public AuthenticationManager authenticationManagerBean() throws Exception {
-//		return super.authenticationManagerBean();
-//	}
+	@Override
+	@Bean
+	public AuthenticationManager authenticationManagerBean()
+			throws Exception {
+		return super.authenticationManagerBean();
+	}
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {

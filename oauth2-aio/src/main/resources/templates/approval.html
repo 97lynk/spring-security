@@ -23,16 +23,16 @@
                         <div class="col-sm-8">
                             <div class="form-check form-check-inline pr-4">
                                 <input class="form-check-input" type="radio"
+                                       value="true"
                                        th:name="${entry.key}"
-                                       th:value="${entry.value}"
                                        th:checked="${entry.value}"/>
                                 <label class="form-check-label">Approve</label>
                             </div>
                             <div class="form-check form-check-inline">
                                 <input class="form-check-input" type="radio"
+                                       value="false"
                                        th:name="${entry.key}"
-                                       th:value="${entry.value}"
-                                       th:checked="${entry.value}"/>
+                                       th:checked="${!entry.value}"/>
                                 <label class="form-check-label">Deny</label>
                             </div>
                         </div>
