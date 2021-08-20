@@ -1,13 +1,14 @@
 package io.a97lynk.register.controller;
 
+import io.a97lynk.register.dto.GenericResponse;
 import io.a97lynk.register.dto.UserDto;
 import io.a97lynk.register.entity.User;
 import io.a97lynk.register.entity.VerificationToken;
 import io.a97lynk.register.event.OnRegistrationCompleteEvent;
 import io.a97lynk.register.exceptions.UserAlreadyExistException;
 import io.a97lynk.register.service.IUserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
@@ -16,18 +17,21 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Calendar;
-import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 
 @Controller
 @RequestMapping("/signup")
+@Slf4j
 public class RegisterController {
 
 	private final IUserService userService;
 
 	private final ApplicationEventPublisher eventPublisher;
+
 
 	public RegisterController(IUserService userService, ApplicationEventPublisher eventPublisher) {
 		this.userService = userService;
@@ -52,9 +56,7 @@ public class RegisterController {
 		try {
 			User registered = userService.registerNewUserAccount(userDto);
 
-			String appUrl = request.getContextPath();
-			eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registered,
-					request.getLocale(), appUrl));
+			eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registered, request.getLocale(), request.getContextPath()));
 		} catch (UserAlreadyExistException uaeEx) {
 			ModelAndView mav = new ModelAndView("registration", "user", userDto);
 			mav.addObject("message", "An account for that username/email already exists.");
@@ -71,17 +73,42 @@ public class RegisterController {
 
 		VerificationToken verificationToken = userService.getVerificationToken(token);
 		if (verificationToken == null) {
-			return new ModelAndView("badUser", "messageKey", "auth.message.invalidToken");
+			model.addAttribute("expired", false);
+			model.addAttribute("token", token);
+			model.addAttribute("messageKey", "auth.message.invalidToken");
+			return new ModelAndView("badUser", model);
 		}
 
 		User user = verificationToken.getUser();
 		Calendar cal = Calendar.getInstance();
 		if ((verificationToken.getExpiryDate().getTime() - cal.getTime().getTime()) <= 0) {
-			return new ModelAndView("badUser", "messageKey", "auth.message.expired");
+			model.addAttribute("expired", true);
+			model.addAttribute("token", token);
+			model.addAttribute("messageKey", "auth.message.expired");
+			return new ModelAndView("badUser", model);
 		}
 
 		user.setEnabled(true);
 		userService.saveRegisteredUser(user);
 		return new ModelAndView("redirect:/loginPage", model);
+	}
+
+	@GetMapping("/resend")
+	@ResponseBody
+	public GenericResponse resendRegistrationToken(HttpServletRequest request, @RequestParam("token") String existingToken) throws Exception {
+
+		VerificationToken newToken = userService.generateNewVerificationToken(existingToken);
+		User user = userService.getUser(newToken.getToken());
+
+		CompletableFuture.runAsync(() -> {
+			try {
+				userService.sendMail(request.getContextPath(), user, newToken.getToken(), "Resend Registration Confirmation");
+				log.info("Mail is sent to " + user.getEmail());
+			} catch (MessagingException e) {
+				log.error(e.getMessage());
+			}
+		});
+
+		return new GenericResponse("RESEND TOKEN");
 	}
 }

@@ -7,14 +7,24 @@ import io.a97lynk.register.exceptions.UserAlreadyExistException;
 import io.a97lynk.register.repository.UserRepository;
 import io.a97lynk.register.repository.VerificationTokenRepository;
 import io.a97lynk.register.service.IUserService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.jdbc.datasource.init.DatabasePopulator;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -26,10 +36,20 @@ public class UserService implements IUserService {
 
 	private final PasswordEncoder passwordEncoder;
 
-	public UserService(UserRepository repository, VerificationTokenRepository tokenRepository, PasswordEncoder passwordEncoder) {
+	private final MessageSource messages;
+
+	private final TemplateEngine templateEngine;
+
+	private final JavaMailSender mailSender;
+
+	public UserService(UserRepository repository, VerificationTokenRepository tokenRepository, PasswordEncoder passwordEncoder,
+	                   MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender) {
 		this.repository = repository;
 		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
+		this.messages = messages;
+		this.templateEngine = templateEngine;
+		this.mailSender = mailSender;
 	}
 
 	@Override
@@ -58,7 +78,7 @@ public class UserService implements IUserService {
 	public void createVerificationToken(User user, String token) {
 		VerificationToken myToken = VerificationToken.builder()
 				.token(token)
-				.expiryDate(calculateExpiryDate(1440))
+				.expiryDate(calculateExpiryDate(1))
 				.user(user)
 				.build();
 		tokenRepository.save(myToken);
@@ -70,8 +90,45 @@ public class UserService implements IUserService {
 	}
 
 	@Override
+	public VerificationToken generateNewVerificationToken(String existingToken) throws Exception {
+		VerificationToken myToken = tokenRepository.findByToken(existingToken);
+		if (myToken == null) throw new Exception("Invalid token");
+
+		myToken.setExpiryDate(calculateExpiryDate(0));
+		tokenRepository.save(myToken);
+
+
+		VerificationToken myToken2 = VerificationToken.builder()
+				.token(UUID.randomUUID().toString())
+				.expiryDate(calculateExpiryDate(1))
+				.user(myToken.getUser())
+				.build();
+		return tokenRepository.save(myToken2);
+	}
+
+	@Override
 	public void saveRegisteredUser(User user) {
 		repository.save(user);
+	}
+
+	@Override
+	public void sendMail(String contextPath, User user, String token, String subject) throws MessagingException {
+		String confirmationUrl = String.format("http://localhost:8080%s/signup/confirm?token=%s", contextPath, token);
+
+		final Context context = new Context();
+		context.setLocale(LocaleContextHolder.getLocale());
+		context.setVariable("url", confirmationUrl);
+		context.setVariable("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
+
+		MimeMessage mimeMessage = mailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
+		helper.setSubject(subject);
+		helper.setFrom("system");
+		helper.setTo(user.getEmail());
+
+		helper.setText(templateEngine.process("mail", context), true);
+		helper.setTo(user.getEmail());
+		mailSender.send(mimeMessage);
 	}
 
 	// TODO

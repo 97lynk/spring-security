@@ -7,12 +7,15 @@ import org.springframework.context.support.ReloadableResourceBundleMessageSource
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 
 import java.util.Locale;
 
 @Configuration
-public class BeanConfig {
+public class WebConfig implements WebMvcConfigurer {
 
 	@Bean(name = "messageSource")
 	public MessageSource getMessageResource() {
@@ -32,5 +35,12 @@ public class BeanConfig {
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder(10);
+	}
+
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		LocaleChangeInterceptor lci = new LocaleChangeInterceptor();
+		lci.setParamName("lang");
+		registry.addInterceptor(lci).addPathPatterns("/*");
 	}
 }

@@ -10,42 +10,43 @@
           integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
     <link href="https://getbootstrap.com/docs/4.0/examples/signin/signin.css" rel="stylesheet" crossorigin="anonymous"/>
 </head>
-<body>
-<div class="container">
-    <form class="form-signin" method="post" action="/perform_login">
-        <h2 class="form-signin-heading" th:text="#{label.login.title}">Please sign in</h2>
-        <div th:if="${param.status != null and param.status[0] == 'error'}" class="alert alert-danger" role="alert">
+<body class="text-center">
+<form class="form-signin" method="post" action="/perform_login">
+    <img class="mb-4" src="https://getbootstrap.com/docs/4.0/assets/brand/bootstrap-solid.svg" alt="" width="72"
+         height="72">
+    <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
 
-            <div>
-                Failed to login.
-                <p th:if="${session['SPRING_SECURITY_LAST_EXCEPTION'] != null}">
-                    Reason: <span th:text="${session['SPRING_SECURITY_LAST_EXCEPTION'].message}"></span>
-                </p>
-            </div>
+    <div th:if="${param.status != null and param.status[0] == 'error'}" class="alert alert-danger" role="alert">
 
+        <div>
+            Failed to login.
+            <p th:if="${session['SPRING_SECURITY_LAST_EXCEPTION'] != null}">
+                <span th:text="${session['SPRING_SECURITY_LAST_EXCEPTION'].message}"></span>
+            </p>
         </div>
 
-        <div class="alert alert-success" role="alert" th:if="${param.status != null and param.status[0] == 'logout'}">
-            You have been logged out.
-        </div>
-        <p>
-            <label for="username" class="sr-only" th:text="#{label.user.email}">Username</label>
-            <input type="text" id="username" name="username" class="form-control" placeholder="Username" required
-                   autofocus>
-        </p>
-        <p>
-            <label for="password" class="sr-only" th:text="#{label.user.password}">Password</label>
-            <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
-        </p>
+    </div>
 
-        <p>
-        <p>
-            <a href="/signup" th:text="#{label.link.signup}">Signup</a>
-        </p>
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-        <!--            <input type="checkbox" name="rememberMe"/> Remember me on this computer.</p>-->
-        <button class="btn btn-lg btn-primary btn-block" type="submit" th:text="#{label.form.submit}">Sign in</button>
-    </form>
-</div>
+    <div class="alert alert-success" role="alert" th:if="${param.status != null and param.status[0] == 'logout'}">
+        You have been logged out.
+    </div>
+
+    <label for="username" class="sr-only" th:text="#{label.user.email}">Email address</label>
+    <input id="username" name="username" class="form-control" placeholder="Email address" required autofocus/>
+    <label for="password" class="sr-only" th:text="#{label.user.password}">Password</label>
+    <input id="password" type="password" name="password" class="form-control" placeholder="Password" required/>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+    <!--    <div class="checkbox mb-3">-->
+    <!--        <label>-->
+    <!--            <input type="checkbox" value="remember-me"> Remember me-->
+    <!--        </label>-->
+    <!--    </div>-->
+    <button class="btn btn-lg btn-primary btn-block" type="submit" th:text="#{label.form.submit}">Sign in</button>
+    <div>
+        <span th:text="#{label.login.noAccount}"> Don't have an account?</span>&nbsp;
+        <a href="/signup" th:text="#{label.link.signup}">Signup</a>
+    </div>
+    <p class="mt-5 mb-3 text-muted">© 2017-2018</p>
+</form>
 </body>
 </html>

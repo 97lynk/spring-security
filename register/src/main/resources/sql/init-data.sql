@@ -1,0 +1,2 @@
+INSERT INTO `user`(email, password, enabled, first_name, last_name, roles)
+values ('97lynk1@gmail.com', '$2a$10$qIl4cDj1jgd664TxJCZ7a.BbEb0oo/F/dy0lkM9ickG.mkHfoi5mq', true, 'John', 'KKK', 'ROLE_USER');
