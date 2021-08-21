@@ -12,14 +12,15 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import java.util.Calendar;
 import java.util.concurrent.CompletableFuture;
 
@@ -41,18 +42,22 @@ public class RegisterController {
 	@GetMapping
 	public String showRegistrationForm(Model model) {
 		UserDto userDto = new UserDto();
-		userDto.setFirstName("Tuấn");
-		userDto.setLastName("Nguyễn");
-		userDto.setEmail("97lynk@gmail.com");
-		userDto.setPassword("123");
-		userDto.setMatchingPassword("123");
+//		userDto.setFirstName("Tuấn");
+//		userDto.setLastName("Nguyễn");
+//		userDto.setEmail("97lynk@gmail.com");
+//		userDto.setPassword("123");
+//		userDto.setMatchingPassword("123");
 		model.addAttribute("user", userDto);
 		return "registration";
 	}
 
 	@PostMapping
-	public ModelAndView registerUserAccount(@ModelAttribute("user") @Valid UserDto userDto,
-	                                        HttpServletRequest request, Errors errors) {
+	public ModelAndView registerUserAccount(@ModelAttribute("user") @Validated UserDto userDto, BindingResult result, Errors errors,
+	                                        HttpServletRequest request) {
+		if (result.hasErrors()) {
+			return new ModelAndView("registration");
+		}
+
 		try {
 			User registered = userService.registerNewUserAccount(userDto);
 

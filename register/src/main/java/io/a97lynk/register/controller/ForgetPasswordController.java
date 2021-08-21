@@ -1,20 +1,22 @@
 package io.a97lynk.register.controller;
 
+import io.a97lynk.register.dto.ChangePasswordDto;
 import io.a97lynk.register.entity.PasswordResetToken;
+import io.a97lynk.register.entity.User;
 import io.a97lynk.register.service.impl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.ui.ModelMap;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Email;
+import java.util.Calendar;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -54,5 +56,31 @@ public class ForgetPasswordController {
 		return "forgotPassword";
 	}
 
-//	@PostMapping("/changePassword")
+	@GetMapping("/changePassword")
+	public ModelAndView changePassword(@RequestParam("token") String token, ModelMap model) {
+
+		PasswordResetToken passwordResetToken = userService.getPasswordResetToken(token);
+		if (passwordResetToken == null) {
+			model.addAttribute("expired", false);
+			model.addAttribute("token", token);
+			model.addAttribute("messageKey", "auth.message.invalidToken");
+			return new ModelAndView("badUser", model);
+		}
+
+		User user = passwordResetToken.getUser();
+		Calendar cal = Calendar.getInstance();
+		if ((passwordResetToken.getExpiryDate().getTime() - cal.getTime().getTime()) <= 0) {
+			model.addAttribute("expired", true);
+			model.addAttribute("token", token);
+			model.addAttribute("messageKey", "auth.message.expired");
+			return new ModelAndView("badUser", model);
+		}
+
+		ChangePasswordDto dto = new ChangePasswordDto();
+		dto.setEmail(user.getEmail());
+		dto.setPassword("");
+		dto.setMatchingPassword("");
+		model.addAttribute("user", dto);
+		return new ModelAndView("changePassword", model);
+	}
 }

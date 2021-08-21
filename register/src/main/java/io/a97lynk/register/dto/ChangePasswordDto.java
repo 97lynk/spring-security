@@ -8,18 +8,9 @@ import lombok.Data;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
-
 @Data
 @PasswordMatches
-public class UserDto {
-
-	@NotNull
-	@NotEmpty
-	private String firstName;
-
-	@NotNull
-	@NotEmpty
-	private String lastName;
+public class ChangePasswordDto {
 
 	@NotNull
 	@NotEmpty

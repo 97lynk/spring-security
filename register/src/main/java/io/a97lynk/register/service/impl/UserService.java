@@ -9,6 +9,7 @@ import io.a97lynk.register.repository.PasswordTokenRepository;
 import io.a97lynk.register.repository.UserRepository;
 import io.a97lynk.register.repository.VerificationTokenRepository;
 import io.a97lynk.register.service.IUserService;
+import io.a97lynk.register.service.MailService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -23,10 +24,7 @@ import org.thymeleaf.context.Context;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Transactional
@@ -40,20 +38,19 @@ public class UserService implements IUserService {
 
 	private final MessageSource messages;
 
-	private final TemplateEngine templateEngine;
 
-	private final JavaMailSender mailSender;
+	private final MailService mailService;
+
 
 	private final PasswordTokenRepository passwordTokenRepository;
 
 	public UserService(UserRepository repository, VerificationTokenRepository tokenRepository, PasswordEncoder passwordEncoder,
-	                   MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender, PasswordTokenRepository passwordTokenRepository) {
+	                   MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender, MailService mailService, PasswordTokenRepository passwordTokenRepository) {
 		this.repository = repository;
 		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.messages = messages;
-		this.templateEngine = templateEngine;
-		this.mailSender = mailSender;
+		this.mailService = mailService;
 		this.passwordTokenRepository = passwordTokenRepository;
 	}
 
@@ -67,6 +64,7 @@ public class UserService implements IUserService {
 	public PasswordResetToken createPasswordResetTokenForUser(String email, String token) throws UsernameNotFoundException {
 		PasswordResetToken myToken = new PasswordResetToken();
 		myToken.setToken(token);
+		myToken.setExpiryDate(calculateExpiryDate(10));
 		myToken.setUser(findUserByEmail(email));
 		return passwordTokenRepository.save(myToken);
 	}
@@ -109,6 +107,11 @@ public class UserService implements IUserService {
 	}
 
 	@Override
+	public PasswordResetToken getPasswordResetToken(String token) {
+		return passwordTokenRepository.findByToken(token);
+	}
+
+	@Override
 	public VerificationToken generateNewVerificationToken(String existingToken) throws Exception {
 		VerificationToken myToken = tokenRepository.findByToken(existingToken);
 		if (myToken == null) throw new Exception("Invalid token");
@@ -133,41 +136,22 @@ public class UserService implements IUserService {
 	@Override
 	public void sendMail(String contextPath, User user, String token, String subject) throws MessagingException {
 		String confirmationUrl = String.format("http://localhost:8080%s/signup/confirm?token=%s", contextPath, token);
+		Map<String, Object> props = new HashMap<>();
+		props.put("url", confirmationUrl);
+		props.put("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
 
-		final Context context = new Context();
-		context.setLocale(LocaleContextHolder.getLocale());
-		context.setVariable("url", confirmationUrl);
-		context.setVariable("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
-
-		MimeMessage mimeMessage = mailSender.createMimeMessage();
-		MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
-		helper.setSubject(subject);
-		helper.setFrom("system");
-		helper.setTo(user.getEmail());
-
-		helper.setText(templateEngine.process("mail", context), true);
-		helper.setTo(user.getEmail());
-		mailSender.send(mimeMessage);
+		mailService.buildAndSendMail("mail", user.getEmail(), subject, props);
 	}
 
 	@Override
 	public void sendMailResetPassword(String contextPath, User user, String token, String subject) throws MessagingException {
 		String confirmationUrl = String.format("http://localhost:8080%s/forgetPassword/changePassword?token=%s", contextPath, token);
 
-		final Context context = new Context();
-		context.setLocale(LocaleContextHolder.getLocale());
-		context.setVariable("url", confirmationUrl);
-		context.setVariable("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
+		Map<String, Object> props = new HashMap<>();
+		props.put("url", confirmationUrl);
+		props.put("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
 
-		MimeMessage mimeMessage = mailSender.createMimeMessage();
-		MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
-		helper.setSubject(subject);
-		helper.setFrom("system");
-		helper.setTo(user.getEmail());
-
-		helper.setText(templateEngine.process("forgetMail", context), true);
-		helper.setTo(user.getEmail());
-		mailSender.send(mimeMessage);
+		mailService.buildAndSendMail("mail", user.getEmail(), subject, props);
 	}
 
 	// TODO
