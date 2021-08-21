@@ -1,17 +1,19 @@
 package io.a97lynk.register.service.impl;
 
 import io.a97lynk.register.dto.UserDto;
+import io.a97lynk.register.entity.PasswordResetToken;
 import io.a97lynk.register.entity.User;
 import io.a97lynk.register.entity.VerificationToken;
 import io.a97lynk.register.exceptions.UserAlreadyExistException;
+import io.a97lynk.register.repository.PasswordTokenRepository;
 import io.a97lynk.register.repository.UserRepository;
 import io.a97lynk.register.repository.VerificationTokenRepository;
 import io.a97lynk.register.service.IUserService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.jdbc.datasource.init.DatabasePopulator;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,14 +44,31 @@ public class UserService implements IUserService {
 
 	private final JavaMailSender mailSender;
 
+	private final PasswordTokenRepository passwordTokenRepository;
+
 	public UserService(UserRepository repository, VerificationTokenRepository tokenRepository, PasswordEncoder passwordEncoder,
-	                   MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender) {
+	                   MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender, PasswordTokenRepository passwordTokenRepository) {
 		this.repository = repository;
 		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.messages = messages;
 		this.templateEngine = templateEngine;
 		this.mailSender = mailSender;
+		this.passwordTokenRepository = passwordTokenRepository;
+	}
+
+	@Override
+	public User findUserByEmail(String email) throws UsernameNotFoundException {
+		return repository.findByEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException(email));
+	}
+
+	@Override
+	public PasswordResetToken createPasswordResetTokenForUser(String email, String token) throws UsernameNotFoundException {
+		PasswordResetToken myToken = new PasswordResetToken();
+		myToken.setToken(token);
+		myToken.setUser(findUserByEmail(email));
+		return passwordTokenRepository.save(myToken);
 	}
 
 	@Override
@@ -127,6 +146,26 @@ public class UserService implements IUserService {
 		helper.setTo(user.getEmail());
 
 		helper.setText(templateEngine.process("mail", context), true);
+		helper.setTo(user.getEmail());
+		mailSender.send(mimeMessage);
+	}
+
+	@Override
+	public void sendMailResetPassword(String contextPath, User user, String token, String subject) throws MessagingException {
+		String confirmationUrl = String.format("http://localhost:8080%s/forgetPassword/changePassword?token=%s", contextPath, token);
+
+		final Context context = new Context();
+		context.setLocale(LocaleContextHolder.getLocale());
+		context.setVariable("url", confirmationUrl);
+		context.setVariable("fullname", String.format("%s %s", user.getFirstName(), user.getLastName()));
+
+		MimeMessage mimeMessage = mailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(mimeMessage);
+		helper.setSubject(subject);
+		helper.setFrom("system");
+		helper.setTo(user.getEmail());
+
+		helper.setText(templateEngine.process("forgetMail", context), true);
 		helper.setTo(user.getEmail());
 		mailSender.send(mimeMessage);
 	}

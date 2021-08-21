@@ -21,7 +21,7 @@
         <div>
             Failed to login.
             <p th:if="${session['SPRING_SECURITY_LAST_EXCEPTION'] != null}">
-                <span th:text="${session['SPRING_SECURITY_LAST_EXCEPTION'].message}"></span>
+                <span th:text="#{${session['SPRING_SECURITY_LAST_EXCEPTION'].message}}"></span>
             </p>
         </div>
 
@@ -42,9 +42,15 @@
     <!--        </label>-->
     <!--    </div>-->
     <button class="btn btn-lg btn-primary btn-block" type="submit" th:text="#{label.form.submit}">Sign in</button>
-    <div>
-        <span th:text="#{label.login.noAccount}"> Don't have an account?</span>&nbsp;
-        <a href="/signup" th:text="#{label.link.signup}">Signup</a>
+    <div class="mt-2">
+        <p>
+            <a href="/forgetPassword" th:text="#{label.login.forgot}">Forgot password</a>
+        </p>
+        <hr/>
+        <p>
+            <span th:text="#{label.login.noAccount}"> Don't have an account?</span>&nbsp;
+            <a href="/signup" th:text="#{label.link.signup}">Signup</a>
+        </p>
     </div>
     <p class="mt-5 mb-3 text-muted">© 2017-2018</p>
 </form>
