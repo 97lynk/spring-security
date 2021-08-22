@@ -1,11 +1,13 @@
 package io.a97lynk.register.controller;
 
 import io.a97lynk.register.dto.ChangePasswordDto;
-import io.a97lynk.register.entity.PasswordResetToken;
+import io.a97lynk.register.entity.Token;
 import io.a97lynk.register.entity.User;
-import io.a97lynk.register.service.impl.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import io.a97lynk.register.exceptions.EmailNotFoundException;
+import io.a97lynk.register.exceptions.ExpiredTokenException;
+import io.a97lynk.register.exceptions.NotFoundTokenException;
+import io.a97lynk.register.service.TokenService;
+import io.a97lynk.register.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.ui.ModelMap;
@@ -15,17 +17,22 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import javax.validation.constraints.Email;
-import java.util.Calendar;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+
 
 @Controller
 @RequestMapping("/forgetPassword")
 public class ForgetPasswordController {
 
-	@Autowired
-	UserService userService;
+	private final UserService userService;
+	private final TokenService tokenService;
+
+	public ForgetPasswordController(UserService userService, TokenService tokenService) {
+		this.userService = userService;
+		this.tokenService = tokenService;
+	}
 
 	@GetMapping
 	public String page(Model model) {
@@ -37,18 +44,21 @@ public class ForgetPasswordController {
 	public String submit(@ModelAttribute("email") @Email String email, BindingResult bindingResult,
 	                     HttpServletRequest request, Model model) {
 
-		String token = UUID.randomUUID().toString();
 		try {
-			PasswordResetToken passwordResetToken = userService.createPasswordResetTokenForUser(email, token);
+			Token token = tokenService.createPasswordToken(email);
 			CompletableFuture.runAsync(() -> {
 				try {
-					userService.sendMailResetPassword(request.getContextPath(), passwordResetToken.getUser(), token, "Forget password");
+					userService.sendMailResetPassword(
+							request.getContextPath(),
+							token.getUser(),
+							token.getToken(),
+							"Forget password");
 				} catch (MessagingException e) {
 					e.printStackTrace();
 				}
 			});
 			model.addAttribute("success", true);
-		} catch (UsernameNotFoundException exception) {
+		} catch (EmailNotFoundException exception) {
 			model.addAttribute("success", false);
 			bindingResult.reject("message.notExistEmail");
 		}
@@ -57,30 +67,55 @@ public class ForgetPasswordController {
 	}
 
 	@GetMapping("/changePassword")
-	public ModelAndView changePassword(@RequestParam("token") String token, ModelMap model) {
+	public ModelAndView changePasswordPage(@RequestParam("token") String tokenStr, ModelMap model) {
 
-		PasswordResetToken passwordResetToken = userService.getPasswordResetToken(token);
-		if (passwordResetToken == null) {
+		try {
+			Token token = tokenService.getToken(tokenStr);
+			User user = token.getUser();
+
+			ChangePasswordDto dto = new ChangePasswordDto();
+			dto.setEmail(user.getEmail());
+			dto.setPassword("");
+			dto.setMatchingPassword("");
+			dto.setToken(tokenStr);
+			model.addAttribute("user", dto);
+			return new ModelAndView("changePassword", model);
+		} catch (NotFoundTokenException e) {
 			model.addAttribute("expired", false);
-			model.addAttribute("token", token);
+			model.addAttribute("token", tokenStr);
 			model.addAttribute("messageKey", "auth.message.invalidToken");
 			return new ModelAndView("badUser", model);
-		}
-
-		User user = passwordResetToken.getUser();
-		Calendar cal = Calendar.getInstance();
-		if ((passwordResetToken.getExpiryDate().getTime() - cal.getTime().getTime()) <= 0) {
+		} catch (ExpiredTokenException e) {
 			model.addAttribute("expired", true);
-			model.addAttribute("token", token);
+			model.addAttribute("token", tokenStr);
 			model.addAttribute("messageKey", "auth.message.expired");
 			return new ModelAndView("badUser", model);
 		}
 
-		ChangePasswordDto dto = new ChangePasswordDto();
-		dto.setEmail(user.getEmail());
-		dto.setPassword("");
-		dto.setMatchingPassword("");
-		model.addAttribute("user", dto);
-		return new ModelAndView("changePassword", model);
+
+	}
+
+	@PostMapping("/changePassword")
+	public ModelAndView changePassword(@ModelAttribute("user") @Valid ChangePasswordDto dto, BindingResult result, ModelMap model) {
+		if (result.hasErrors()) return new ModelAndView("changePassword");
+
+		try {
+			Token token = tokenService.getToken(dto.getToken());
+			User user = token.getUser();
+			userService.changePassword(user, dto.getPassword());
+
+			return new ModelAndView("redirect:/loginPage");
+		} catch (NotFoundTokenException e) {
+			model.addAttribute("expired", false);
+			model.addAttribute("token", dto.getToken());
+			model.addAttribute("messageKey", "auth.message.invalidToken");
+			return new ModelAndView("badUser", model);
+		} catch (ExpiredTokenException e) {
+			model.addAttribute("expired", true);
+			model.addAttribute("token", dto.getToken());
+			model.addAttribute("messageKey", "auth.message.expired");
+			return new ModelAndView("badUser", model);
+		}
+
 	}
 }

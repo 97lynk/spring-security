@@ -22,4 +22,8 @@ public class ChangePasswordDto {
 	@NotEmpty
 	private String email;
 
+	@NotNull
+	@NotEmpty
+	private String token;
+
 }

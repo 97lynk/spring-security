@@ -1,6 +1,5 @@
 package io.a97lynk.register.validation.validator;
 
-import io.a97lynk.register.dto.UserDto;
 import io.a97lynk.register.validation.annotation.PasswordMatches;
 
 import javax.validation.ConstraintValidator;
@@ -15,7 +14,15 @@ public class PasswordMatchesValidator
 
 	@Override
 	public boolean isValid(Object obj, ConstraintValidatorContext context) {
-		UserDto user = (UserDto) obj;
-		return user.getPassword().equals(user.getMatchingPassword());
+		Class clazz = obj.getClass();
+		try {
+			String password = String.valueOf(clazz.getMethod("getPassword").invoke(obj));
+			String matchingPassword = String.valueOf(clazz.getMethod("getMatchingPassword").invoke(obj));
+
+			return password.equals(matchingPassword);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 }
