@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class UserAlreadyExistException extends Exception {
 
-	private String message;
+	private final String message;
 
-	public UserAlreadyExistException(String s) {
-		message = s;
+	public UserAlreadyExistException(String message) {
+		this.message = message;
 	}
 }

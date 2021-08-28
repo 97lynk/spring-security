@@ -9,7 +9,10 @@ import org.springframework.context.ApplicationEvent;
 @Setter
 public class OnRegistrationCompleteEvent extends ApplicationEvent {
 
+	private static final long serialVersionUID = 111L;
+
 	private String appUrl;
+
 	private User user;
 
 	public OnRegistrationCompleteEvent(User user, String appUrl) {

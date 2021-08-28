@@ -1,7 +1,6 @@
 package io.a97lynk.register.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -25,11 +24,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		auth
 				.userDetailsService(userDetailsService)
 				.passwordEncoder(passwordEncoder);
-	}
-
-	@Override
-	protected AuthenticationManager authenticationManager() throws Exception {
-		return super.authenticationManager();
 	}
 
 	@Override
@@ -57,7 +51,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.loginProcessingUrl("/perform_login")
 
 				// when success
-				.defaultSuccessUrl("/", true) // ->  new SavedRequestAwareAuthenticationSuccessHandler()
+				.defaultSuccessUrl("/home", true) // ->  new SavedRequestAwareAuthenticationSuccessHandler()
 				// when fail
 				.failureUrl("/loginPage?status=error") // -> failureHandler(new SimpleUrlAuthenticationFailureHandler(url))
 

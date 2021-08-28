@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class NotFoundTokenException extends Exception {
 
-	private String message;
+	private final String token;
 
-	public NotFoundTokenException(String message) {
-		this.message = message;
+	public NotFoundTokenException(String token) {
+		this.token = token;
 	}
 }

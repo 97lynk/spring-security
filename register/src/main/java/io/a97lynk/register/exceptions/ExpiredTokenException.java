@@ -5,9 +5,9 @@ import lombok.Data;
 @Data
 public class ExpiredTokenException extends Exception {
 
-	private String message;
+	private final String token;
 
-	public ExpiredTokenException(String message) {
-		this.message = message;
+	public ExpiredTokenException(String token) {
+		this.token = token;
 	}
 }

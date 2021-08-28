@@ -6,9 +6,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.Validator;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-import org.springframework.validation.beanvalidation.LocaleContextMessageInterpolator;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -29,9 +26,7 @@ public class WebConfig implements WebMvcConfigurer {
 
 	@Bean(name = "localeResolver")
 	public LocaleResolver localeResolver() {
-		CookieLocaleResolver slr = new CookieLocaleResolver();
-//		slr.setDefaultLocale(new Locale("vi", "VN"));
-		return slr;
+		return new CookieLocaleResolver();
 	}
 
 	@Bean
@@ -50,11 +45,4 @@ public class WebConfig implements WebMvcConfigurer {
 	public void addInterceptors(InterceptorRegistry registry) {
 		registry.addInterceptor(localeChangeInterceptor()).addPathPatterns("/*");
 	}
-//
-//	@Override
-//	public Validator getValidator() {
-//		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
-//		validator.setMessageInterpolator(new LocaleContextMessageInterpolator(getMessageResource()));
-//		return validator;
-//	}
 }

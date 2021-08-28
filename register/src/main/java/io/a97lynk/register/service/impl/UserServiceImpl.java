@@ -11,12 +11,11 @@ import io.a97lynk.register.repository.UserRepository;
 import io.a97lynk.register.service.MailService;
 import io.a97lynk.register.service.TokenService;
 import io.a97lynk.register.service.UserService;
-import org.springframework.context.MessageSource;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.TemplateEngine;
 
 import javax.mail.MessagingException;
 import java.sql.Timestamp;
@@ -32,25 +31,32 @@ public class UserServiceImpl implements UserService {
 
 	private final PasswordEncoder passwordEncoder;
 
-	private final MessageSource messages;
-
-
 	private final MailService mailService;
-
-
-	private final TokenRepository passwordTokenRepository;
 
 	private final TokenService tokenService;
 
-	public UserServiceImpl(UserRepository repository, TokenRepository tokenRepository, PasswordEncoder passwordEncoder,
-	                       MessageSource messages, TemplateEngine templateEngine, JavaMailSender mailSender, MailService mailService, TokenRepository passwordTokenRepository, TokenService tokenService) {
+	public UserServiceImpl(UserRepository repository,
+	                       TokenRepository tokenRepository,
+	                       PasswordEncoder passwordEncoder,
+	                       MailService mailService, TokenService tokenService) {
 		this.repository = repository;
 		this.tokenRepository = tokenRepository;
 		this.passwordEncoder = passwordEncoder;
-		this.messages = messages;
 		this.mailService = mailService;
-		this.passwordTokenRepository = passwordTokenRepository;
 		this.tokenService = tokenService;
+	}
+
+	@Override
+	public UserDto getCurrentUser() {
+		String email = SecurityContextHolder.getContext().getAuthentication().getName();
+		User user = repository.findByEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("No user found with username: " + email));
+
+		UserDto userDto = new UserDto();
+		userDto.setEmail(user.getEmail());
+		userDto.setFirstName(user.getFirstName());
+		userDto.setLastName(user.getLastName());
+		return userDto;
 	}
 
 	@Override
@@ -75,7 +81,7 @@ public class UserServiceImpl implements UserService {
 	public Token generateNewVerificationToken(String existingToken) throws NotFoundTokenException, EmailNotFoundException {
 		Token myToken = tokenService.getTokenIgnoreExpired(existingToken);
 
-		myToken.setExpiryDate(calculateExpiryDate(0));
+		myToken.setExpiryDate(calculateExpiryDate(1));
 		tokenRepository.save(myToken);
 
 		return tokenService.createVerificationToken(myToken.getUser().getEmail());

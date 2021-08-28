@@ -11,6 +11,8 @@ import javax.mail.MessagingException;
 
 public interface UserService {
 
+	UserDto getCurrentUser();
+
 	User registerNewUserAccount(UserDto userDto) throws UserAlreadyExistException;
 
 	void saveRegisteredUser(User user);

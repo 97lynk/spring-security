@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class EmailNotFoundException extends Exception {
 
-	private String message;
+	private final String message;
 
 	public EmailNotFoundException(String message) {
 		this.message = message;
